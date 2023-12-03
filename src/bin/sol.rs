@@ -97,9 +97,9 @@ fn process_matrix(matrix: &Vec<Vec<char>>) -> u64 {
     let mut sum = 0;
 
     for (row_index, row) in matrix.iter().enumerate() {
-        if row_index > 3 {
-            break;
-        }
+        // if row_index > 3 {
+        //     break;
+        // }
 
         sum += process_row(matrix, row, row_index);
         println!("sum: {}", sum);
