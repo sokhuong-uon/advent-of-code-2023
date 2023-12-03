@@ -22,6 +22,7 @@ fn extract_game_data(game: &str) -> (u32, Vec<(u32, u32, u32)>) {
 
     (game_id, sets)
 }
+
 fn process_set(set: &str) -> (u32, u32, u32) {
     let mut rgb = (0, 0, 0);
 
@@ -40,22 +41,35 @@ fn process_set(set: &str) -> (u32, u32, u32) {
 
 fn p1(input: &str) -> u32 {
     let mut sum = 0;
-    let rgb = (12, 13, 14);
 
     for line in input.lines() {
+        let mut rgb = (0, 0, 0);
+
         let game_data = extract_game_data(line);
 
-        let mut possible = true;
-
         for set in game_data.1 {
-            if set.0 > rgb.0 || set.1 > rgb.1 || set.2 > rgb.2 {
-                possible = false;
+            if set.0 > rgb.0 {
+                rgb.0 = set.0;
+            }
+            if set.1 > rgb.1 {
+                rgb.1 = set.1;
+            }
+            if set.2 > rgb.2 {
+                rgb.2 = set.2;
             }
         }
 
-        if possible {
-            sum += game_data.0;
+        let mut multiply = 1;
+        if rgb.0 > 0 {
+            multiply *= rgb.0;
         }
+        if rgb.1 > 0 {
+            multiply *= rgb.1;
+        }
+        if rgb.2 > 0 {
+            multiply *= rgb.2;
+        }
+        sum += multiply;
     }
 
     sum
