@@ -5,18 +5,35 @@ fn main() {
     let mut file = File::open("./src/bin/in.txt").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    println!("{}", p1(&contents));
+    println!("total: {}", p1(&contents));
 }
 
 fn convert_input_to_matrix(input: &str) -> Vec<Vec<char>> {
     input.lines().map(|line| line.chars().collect()).collect()
 }
 
-fn get_adjacent_symbols(
+fn remove_duplicate_adjacent(adjacents: &Vec<(isize, isize)>) -> Vec<(isize, isize)> {
+    let mut unique_adjacents: Vec<(isize, isize)> = vec![adjacents[0]];
+    let mut reference = adjacents[0];
+
+    for i in 1..adjacents.len() {
+        if adjacents[i].0 == reference.0
+            && (adjacents[i].1 == reference.1 - 1 || adjacents[i].1 == reference.1 + 1)
+        {
+            reference = adjacents[i];
+            continue;
+        }
+        unique_adjacents.push(adjacents[i]);
+        reference = adjacents[i];
+    }
+    unique_adjacents
+}
+
+fn get_adjacent_numeric(
     matrix: &Vec<Vec<char>>,
     row_index: usize,
     column_index: usize,
-) -> Vec<char> {
+) -> Vec<(isize, isize)> {
     let top_left = (row_index as isize - 1, column_index as isize - 1);
     let top = (row_index as isize - 1, column_index as isize);
     let top_right = (row_index as isize - 1, column_index as isize + 1);
@@ -37,7 +54,7 @@ fn get_adjacent_symbols(
         bottom_right,
     ];
 
-    let mut symbols: Vec<char> = vec![];
+    let mut symbols: Vec<(isize, isize)> = vec![];
 
     for adjacent in adjacents {
         if adjacent.0 >= 0
@@ -46,8 +63,8 @@ fn get_adjacent_symbols(
             && adjacent.1 < matrix[0].len() as isize
         {
             let char = matrix[adjacent.0 as usize][adjacent.1 as usize];
-            if char != '.' && !char.is_digit(10) {
-                symbols.push(char);
+            if char.is_digit(10) {
+                symbols.push(adjacent);
             }
         }
     }
@@ -55,39 +72,71 @@ fn get_adjacent_symbols(
     symbols
 }
 
-fn is_adjacent_with_any_symbol(adjacent_symbols: &Vec<char>) -> bool {
-    adjacent_symbols.len() > 0
+fn is_gear(adjacent_numeric: &Vec<(isize, isize)>) -> bool {
+    adjacent_numeric.len() == 2
+}
+
+fn compute_gear_ratio(matrix: &Vec<Vec<char>>, adjacent_numeric: &Vec<(isize, isize)>) -> u64 {
+    let mut ratio = 1;
+
+    let mut numeric = String::new();
+
+    for adjacent in adjacent_numeric {
+        numeric.push(matrix[adjacent.0 as usize][adjacent.1 as usize]);
+
+        // seek to the right
+        let mut right = adjacent.1 as usize;
+        while right + 1 < matrix[0].len() {
+            let char = matrix[adjacent.0 as usize][right + 1];
+            if char.is_digit(10) {
+                numeric.push(char);
+            } else {
+                break;
+            }
+            right += 1;
+        }
+
+        // seek to the left
+        let mut left = adjacent.1;
+        while left - 1 >= 0 {
+            let char = matrix[adjacent.0 as usize][left as usize - 1];
+            if char.is_digit(10) {
+                numeric.insert(0, char)
+            } else {
+                break;
+            }
+            left -= 1;
+        }
+        println!("numeric: {}", numeric);
+
+        ratio *= numeric.parse::<u64>().unwrap();
+
+        numeric.clear();
+    }
+
+    ratio
 }
 
 fn process_row(matrix: &Vec<Vec<char>>, row: &Vec<char>, row_index: usize) -> u64 {
-    let mut part_string = String::new();
-    let mut is_adjacent_with_symbol = false;
-
     let mut sum = 0;
 
     for (column_index, char) in row.iter().enumerate() {
-        if char.is_digit(10) {
-            let adjacent_symbols = get_adjacent_symbols(matrix, row_index, column_index);
-            if is_adjacent_with_any_symbol(&adjacent_symbols) {
-                is_adjacent_with_symbol = true;
+        if char == &'*' {
+            println!("found star at: {}, {}", row_index, column_index);
+            let adjacent_numeric = get_adjacent_numeric(matrix, row_index, column_index);
+            if adjacent_numeric.len() < 2 {
+                continue;
             }
-
-            part_string.push(*char);
-        } else {
-            if is_adjacent_with_symbol && part_string.len() > 0 {
-                sum += part_string.parse::<u64>().unwrap();
-                is_adjacent_with_symbol = false;
+            // println!("adjacent_numeric: {:?}", adjacent_numeric);
+            let adjacent_numeric = remove_duplicate_adjacent(&adjacent_numeric);
+            // println!("unique adjacent_numeric: {:?}", adjacent_numeric);
+            if is_gear(&adjacent_numeric) {
+                // compute gear ratio
+                let ratio = compute_gear_ratio(matrix, &adjacent_numeric);
+                sum += ratio;
+                println!("ratio: {}", ratio);
             }
-            part_string = String::new();
         }
-        println!(
-            "{} {} '{}' ({}): {} => {}",
-            row_index, column_index, char, part_string, is_adjacent_with_symbol, sum
-        );
-    }
-    // if the last char is numeric
-    if is_adjacent_with_symbol && part_string.len() > 0 {
-        sum += part_string.parse::<u64>().unwrap();
     }
 
     sum
@@ -97,12 +146,19 @@ fn process_matrix(matrix: &Vec<Vec<char>>) -> u64 {
     let mut sum = 0;
 
     for (row_index, row) in matrix.iter().enumerate() {
-        // if row_index > 3 {
+        // if row_index <= 90 {
+        //     continue;
+        // }
+        // if row_index > 100 {
         //     break;
         // }
+        // done from 0 to 100
+        println!("==========");
 
         sum += process_row(matrix, row, row_index);
         println!("sum: {}", sum);
+
+        println!("==========");
     }
 
     sum
