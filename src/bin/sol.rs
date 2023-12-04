@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 
@@ -8,177 +9,61 @@ fn main() {
     println!("total: {}", p1(&contents));
 }
 
-fn convert_input_to_matrix(input: &str) -> Vec<Vec<char>> {
-    input.lines().map(|line| line.chars().collect()).collect()
+fn get_number_group(numeric_line: &str) -> (HashMap<u32, bool>, Vec<u32>) {
+    let groups = numeric_line
+        .split("|")
+        .map(|group| group.trim())
+        .collect::<Vec<&str>>();
+
+    let mut winning_number = HashMap::new();
+    groups[0]
+        .split(" ")
+        .filter_map(|numeric| numeric.parse::<u32>().ok())
+        .for_each(|number| {
+            winning_number.insert(number, true);
+        });
+
+    let number_we_have = groups[1]
+        .split(" ")
+        .filter_map(|numeric| numeric.parse::<u32>().ok())
+        .collect::<Vec<u32>>();
+
+    (winning_number, number_we_have)
 }
 
-fn remove_duplicate_adjacent(adjacents: &Vec<(isize, isize)>) -> Vec<(isize, isize)> {
-    let mut unique_adjacents: Vec<(isize, isize)> = vec![adjacents[0]];
-    let mut reference = adjacents[0];
+fn card_point(card: &str) -> u32 {
+    let mut points = 0;
 
-    for i in 1..adjacents.len() {
-        if adjacents[i].0 == reference.0
-            && (adjacents[i].1 == reference.1 - 1 || adjacents[i].1 == reference.1 + 1)
-        {
-            reference = adjacents[i];
-            continue;
-        }
-        unique_adjacents.push(adjacents[i]);
-        reference = adjacents[i];
-    }
-    unique_adjacents
-}
+    let numeric_line = card.split(":").collect::<Vec<&str>>()[1];
+    let number_group = get_number_group(numeric_line);
 
-fn get_adjacent_numeric(
-    matrix: &Vec<Vec<char>>,
-    row_index: usize,
-    column_index: usize,
-) -> Vec<(isize, isize)> {
-    let top_left = (row_index as isize - 1, column_index as isize - 1);
-    let top = (row_index as isize - 1, column_index as isize);
-    let top_right = (row_index as isize - 1, column_index as isize + 1);
-    let left = (row_index as isize, column_index as isize - 1);
-    let right = (row_index as isize, column_index as isize + 1);
-    let bottom_left = (row_index as isize + 1, column_index as isize - 1);
-    let bottom = (row_index as isize + 1, column_index as isize);
-    let bottom_right = (row_index as isize + 1, column_index as isize + 1);
-
-    let adjacents = vec![
-        top_left,
-        top,
-        top_right,
-        left,
-        right,
-        bottom_left,
-        bottom,
-        bottom_right,
-    ];
-
-    let mut symbols: Vec<(isize, isize)> = vec![];
-
-    for adjacent in adjacents {
-        if adjacent.0 >= 0
-            && adjacent.1 >= 0
-            && adjacent.0 < matrix.len() as isize
-            && adjacent.1 < matrix[0].len() as isize
-        {
-            let char = matrix[adjacent.0 as usize][adjacent.1 as usize];
-            if char.is_digit(10) {
-                symbols.push(adjacent);
+    number_group.1.iter().for_each(|number| {
+        if number_group.0.contains_key(number) {
+            points = match points {
+                0 => 1,
+                _ => points * 2,
             }
         }
+    });
+
+    points
+}
+
+fn p1(input: &str) -> u32 {
+    let mut total = 0;
+
+    for card in input.lines() {
+        total += card_point(card);
     }
-
-    symbols
-}
-
-fn is_gear(adjacent_numeric: &Vec<(isize, isize)>) -> bool {
-    adjacent_numeric.len() == 2
-}
-
-fn compute_gear_ratio(matrix: &Vec<Vec<char>>, adjacent_numeric: &Vec<(isize, isize)>) -> u64 {
-    let mut ratio = 1;
-
-    let mut numeric = String::new();
-
-    for adjacent in adjacent_numeric {
-        numeric.push(matrix[adjacent.0 as usize][adjacent.1 as usize]);
-
-        // seek to the right
-        let mut right = adjacent.1 as usize;
-        while right + 1 < matrix[0].len() {
-            let char = matrix[adjacent.0 as usize][right + 1];
-            if char.is_digit(10) {
-                numeric.push(char);
-            } else {
-                break;
-            }
-            right += 1;
-        }
-
-        // seek to the left
-        let mut left = adjacent.1;
-        while left - 1 >= 0 {
-            let char = matrix[adjacent.0 as usize][left as usize - 1];
-            if char.is_digit(10) {
-                numeric.insert(0, char)
-            } else {
-                break;
-            }
-            left -= 1;
-        }
-        println!("numeric: {}", numeric);
-
-        ratio *= numeric.parse::<u64>().unwrap();
-
-        numeric.clear();
-    }
-
-    ratio
-}
-
-fn process_row(matrix: &Vec<Vec<char>>, row: &Vec<char>, row_index: usize) -> u64 {
-    let mut sum = 0;
-
-    for (column_index, char) in row.iter().enumerate() {
-        if char == &'*' {
-            println!("found star at: {}, {}", row_index, column_index);
-            let adjacent_numeric = get_adjacent_numeric(matrix, row_index, column_index);
-            if adjacent_numeric.len() < 2 {
-                continue;
-            }
-            // println!("adjacent_numeric: {:?}", adjacent_numeric);
-            let adjacent_numeric = remove_duplicate_adjacent(&adjacent_numeric);
-            // println!("unique adjacent_numeric: {:?}", adjacent_numeric);
-            if is_gear(&adjacent_numeric) {
-                // compute gear ratio
-                let ratio = compute_gear_ratio(matrix, &adjacent_numeric);
-                sum += ratio;
-                println!("ratio: {}", ratio);
-            }
-        }
-    }
-
-    sum
-}
-
-fn process_matrix(matrix: &Vec<Vec<char>>) -> u64 {
-    let mut sum = 0;
-
-    for (row_index, row) in matrix.iter().enumerate() {
-        // if row_index <= 90 {
-        //     continue;
-        // }
-        // if row_index > 100 {
-        //     break;
-        // }
-        // done from 0 to 100
-        println!("==========");
-
-        sum += process_row(matrix, row, row_index);
-        println!("sum: {}", sum);
-
-        println!("==========");
-    }
-
-    sum
-}
-
-fn p1(input: &str) -> u64 {
-    let matrix = convert_input_to_matrix(input);
-    let total = process_matrix(&matrix);
 
     total
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
-    fn test_p1() {
-        let input = include_str!("in.txt");
-        // let matrix = convert_input_to_matrix(input);
-        assert_eq!(p1(input), 4361);
+    fn it_works() {
+        assert_eq!(8 + 8, 16);
     }
 }
