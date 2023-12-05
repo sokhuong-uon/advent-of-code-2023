@@ -9,143 +9,229 @@ fn main() {
     println!("total: {}", solution(&contents));
 }
 
-fn get_number_group(numeric_line: &str) -> (HashMap<u32, bool>, Vec<u32>) {
-    let groups = numeric_line
-        .split("|")
-        .map(|group| group.trim())
-        .collect::<Vec<&str>>();
-
-    let mut winning_number = HashMap::new();
-    groups[0]
+fn collect_seed(line: &str) -> Vec<u32> {
+    line.split(":").collect::<Vec<&str>>()[1]
+        .trim()
         .split(" ")
-        .filter_map(|numeric| numeric.parse::<u32>().ok())
-        .for_each(|number| {
-            winning_number.insert(number, true);
-        });
+        .filter_map(|numeric_string| numeric_string.parse::<u32>().ok())
+        .collect::<Vec<u32>>()
+}
 
-    let number_we_have = groups[1]
+fn populate_map(map: &mut Map, line: &str) {
+    let map_numbers = line
         .split(" ")
-        .filter_map(|numeric| numeric.parse::<u32>().ok())
+        .map(|numeric_string| numeric_string.parse::<u32>().unwrap())
         .collect::<Vec<u32>>();
 
-    (winning_number, number_we_have)
-}
-
-fn winning_per_card(card: &str) -> u32 {
-    let mut winning = 0;
-
-    let numeric_line = card.split(":").collect::<Vec<&str>>()[1];
-    let number_group = get_number_group(numeric_line);
-
-    number_group.1.iter().for_each(|number| {
-        if number_group.0.contains_key(number) {
-            winning += 1;
-        }
-    });
-
-    winning
-}
-
-fn get_card_instance_if_exists_or_else_add(card_map: &mut CardMap, card_number: u32) -> u32 {
-    if let Some(instances) = card_map.get_mut(&(card_number as u32)) {
-        return *instances;
-    } else {
-        card_map.insert(card_number as u32, 1);
-        return 1;
+    for i in 0..map_numbers[2] {
+        map.insert(map_numbers[1] + i, map_numbers[0] + i);
     }
 }
 
-fn copy_winning_card_per_card(card_map: &mut CardMap, card_number: u32, winning: u32) {
-    for winning_card_index in (card_number + 1)..=(card_number + winning) {
-        if let Some(instances) = card_map.get_mut(&(winning_card_index as u32)) {
-            *instances += 1;
-        } else {
-            card_map.insert(winning_card_index as u32, 2);
-        }
-    }
+struct Maps {
+    seed_to_soil: Map,
+    soil_to_fertilizer: Map,
+    fertilizer_to_water: Map,
+    water_to_light: Map,
+    light_to_temperature: Map,
+    temperature_to_humidity: Map,
+    humidity_to_location: Map,
 }
 
-type CardMap = HashMap<u32, u32>;
+fn find_location_for_seed(maps: &Maps, seed: &u32) -> u32 {
+    let soil = maps.seed_to_soil.get(&seed).unwrap_or_else(|| &seed);
+
+    let fertilizer = maps.soil_to_fertilizer.get(soil).unwrap_or_else(|| soil);
+
+    let water = maps
+        .fertilizer_to_water
+        .get(fertilizer)
+        .unwrap_or_else(|| fertilizer);
+
+    let light = maps.water_to_light.get(water).unwrap_or_else(|| water);
+
+    let temperature = maps
+        .light_to_temperature
+        .get(light)
+        .unwrap_or_else(|| light);
+
+    let humidity = maps
+        .temperature_to_humidity
+        .get(temperature)
+        .unwrap_or_else(|| temperature);
+
+    let location = maps
+        .humidity_to_location
+        .get(humidity)
+        .unwrap_or_else(|| humidity);
+
+    *location
+}
+
+type Map = HashMap<u32, u32>;
 
 fn solution(input: &str) -> u32 {
-    let mut instances = 0;
+    let mut seeds: Vec<u32> = vec![];
 
-    let mut card_map: CardMap = HashMap::new();
+    let mut maps = Maps {
+        seed_to_soil: HashMap::new(),
+        soil_to_fertilizer: HashMap::new(),
+        fertilizer_to_water: HashMap::new(),
+        water_to_light: HashMap::new(),
+        light_to_temperature: HashMap::new(),
+        temperature_to_humidity: HashMap::new(),
+        humidity_to_location: HashMap::new(),
+    };
 
-    for (card_number, card) in input.lines().enumerate() {
-        let instances_of_current_card =
-            get_card_instance_if_exists_or_else_add(&mut card_map, card_number as u32);
-        instances += instances_of_current_card;
+    let mut should_populate_map_on_next_iteration = false;
 
-        let winning = winning_per_card(card);
+    let mut current_map = &mut maps.seed_to_soil;
 
-        for _ in 0..instances_of_current_card {
-            copy_winning_card_per_card(&mut card_map, card_number as u32, winning);
+    for line in input.lines() {
+        println!("line: {:?}", line);
+        if line.is_empty() {
+            should_populate_map_on_next_iteration = false;
+            continue;
+        }
+
+        if line.starts_with("seeds:") {
+            seeds = collect_seed(line);
+            continue;
+        }
+
+        if should_populate_map_on_next_iteration {
+            populate_map(&mut current_map, line);
+            continue;
+        }
+
+        if line == "seed-to-soil map:" {
+            current_map = &mut maps.seed_to_soil;
+            should_populate_map_on_next_iteration = true;
+        } else if line == "soil-to-fertilizer map:" {
+            current_map = &mut maps.soil_to_fertilizer;
+            should_populate_map_on_next_iteration = true;
+        } else if line == "fertilizer-to-water map:" {
+            current_map = &mut maps.fertilizer_to_water;
+            should_populate_map_on_next_iteration = true;
+        } else if line == "water-to-light map:" {
+            current_map = &mut maps.water_to_light;
+            should_populate_map_on_next_iteration = true;
+        } else if line == "light-to-temperature map:" {
+            current_map = &mut maps.light_to_temperature;
+            should_populate_map_on_next_iteration = true;
+        } else if line == "temperature-to-humidity map:" {
+            current_map = &mut maps.temperature_to_humidity;
+            should_populate_map_on_next_iteration = true;
+        } else if line == "humidity-to-location map:" {
+            current_map = &mut maps.humidity_to_location;
+            should_populate_map_on_next_iteration = true;
         }
     }
 
-    instances
+    let might = seeds
+        .iter()
+        .map(|seed| find_location_for_seed(&maps, seed))
+        .fold(u32::MAX, |acc, v| if v < acc { v } else { acc });
+
+    println!("might: {:?}", might);
+
+    might
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
 
     #[test]
-    fn it_could_count_winning() {
-        let card = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let winning = super::winning_per_card(card);
-        assert_eq!(winning, 4);
+    fn it_can_collect_seed() {
+        let line = "seeds: 1 2 3 4 5";
+        let seeds = super::collect_seed(line);
+        assert_eq!(seeds, vec![1, 2, 3, 4, 5]);
 
-        let card = "Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19";
-        let winning = super::winning_per_card(card);
-        assert_eq!(winning, 2);
-
-        let card = "Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1";
-        let winning = super::winning_per_card(card);
-        assert_eq!(winning, 2);
-
-        let card = "Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83";
-        let winning = super::winning_per_card(card);
-        assert_eq!(winning, 1);
+        let line = "seeds: 79 14 55 13";
+        let seeds = super::collect_seed(line);
+        assert_eq!(seeds, vec![79, 14, 55, 13]);
     }
 
     #[test]
-    fn it_updates_map() {
-        let mut card_map = HashMap::new();
-        let card_number = 0;
+    fn it_can_populate_map() {
+        let mut map = super::Map::new();
+        let line = "50 98 2";
 
-        let instances = super::get_card_instance_if_exists_or_else_add(&mut card_map, card_number);
-        assert_eq!(instances, 1);
+        super::populate_map(&mut map, line);
 
-        let instances = super::get_card_instance_if_exists_or_else_add(&mut card_map, card_number);
-        assert_eq!(instances, 1);
+        assert_eq!(map.len(), 2);
+        assert_eq!(map.get(&98), Some(&50));
+        assert_eq!(map.get(&99), Some(&51));
 
-        let instances = super::get_card_instance_if_exists_or_else_add(&mut card_map, card_number);
-        assert_eq!(instances, 1);
+        //
+        let mut map = super::Map::new();
+        let line = "52 50 48";
+
+        super::populate_map(&mut map, line);
+
+        assert_eq!(map.len(), 48);
+        assert_eq!(map.get(&50), Some(&52));
+        assert_eq!(map.get(&51), Some(&53));
+        for i in 50..98 {
+            assert_eq!(map.get(&i), Some(&(i + 2)));
+        }
+
+        //
+        let mut map = super::Map::new();
+        let line = "50 98 100";
+
+        super::populate_map(&mut map, line);
+
+        assert_eq!(map.len(), 100);
+        assert_eq!(map.get(&98), Some(&50));
+        assert_eq!(map.get(&99), Some(&51));
+        assert_eq!(map.get(&100), Some(&52));
+        for i in 98..198 {
+            assert_eq!(map.get(&i), Some(&(i - 48)));
+        }
     }
 
     #[test]
-    fn it_copies_card() {
-        let mut card_map = HashMap::new();
-        let card_number = 3;
-        let winning = 4;
+    fn it_can_find_location_for_seed() {
+        let mut maps = super::Maps {
+            seed_to_soil: super::Map::new(),
+            soil_to_fertilizer: super::Map::new(),
+            fertilizer_to_water: super::Map::new(),
+            water_to_light: super::Map::new(),
+            light_to_temperature: super::Map::new(),
+            temperature_to_humidity: super::Map::new(),
+            humidity_to_location: super::Map::new(),
+        };
 
-        super::copy_winning_card_per_card(&mut card_map, card_number, winning);
-        assert_eq!(card_map.contains_key(&card_number), false);
+        let seed = 3;
 
-        assert_eq!(*card_map.get(&4).unwrap(), 2);
-        assert_eq!(*card_map.get(&5).unwrap(), 2);
-        assert_eq!(*card_map.get(&6).unwrap(), 2);
-        assert_eq!(*card_map.get(&7).unwrap(), 2);
+        maps.seed_to_soil.insert(3, 1);
+        maps.seed_to_soil.insert(2, 5);
 
-        let card_number = 4;
-        let winning = 2;
+        maps.soil_to_fertilizer.insert(1, 2);
+        maps.soil_to_fertilizer.insert(5, 100);
 
-        super::copy_winning_card_per_card(&mut card_map, card_number, winning);
+        maps.fertilizer_to_water.insert(2, 15);
+        maps.fertilizer_to_water.insert(45, 4);
 
-        assert_eq!(*card_map.get(&5).unwrap(), 3);
-        assert_eq!(*card_map.get(&6).unwrap(), 3);
-        assert_eq!(*card_map.get(&7).unwrap(), 2);
+        maps.water_to_light.insert(3, 4);
+        maps.water_to_light.insert(15, 8);
+
+        maps.light_to_temperature.insert(4, 5);
+        maps.light_to_temperature.insert(34, 99);
+
+        maps.temperature_to_humidity.insert(5, 6);
+        maps.temperature_to_humidity.insert(8, 25);
+
+        maps.humidity_to_location.insert(6, 7);
+        maps.humidity_to_location.insert(32, 9);
+        maps.humidity_to_location.insert(100, 69);
+
+        let location = super::find_location_for_seed(&maps, &seed);
+        assert_eq!(location, 25);
+
+        let seed = 2;
+        let location = super::find_location_for_seed(&maps, &seed);
+        assert_eq!(location, 69);
     }
 }
