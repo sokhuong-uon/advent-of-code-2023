@@ -4,7 +4,7 @@ use std::io::Read;
 pub fn main() -> String {
     let dir = std::env::current_dir().unwrap();
 
-    let mut file = File::open(format!("{}/day05/src/part1/in.txt", dir.display())).unwrap();
+    let mut file = File::open(format!("{}/day05/src/in.txt", dir.display())).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
     format!("Closest Location: {}", solution(&contents))

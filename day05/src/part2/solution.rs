@@ -11,7 +11,7 @@ pub async fn main() -> String {
     let dir = std::env::current_dir().unwrap();
 
     if args.len() < 2 {
-        let mut file = File::open(format!("{}/day05/src/part2/in.txt", dir.display())).unwrap();
+        let mut file = File::open(format!("{}/day05/src/in.txt", dir.display())).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
 
@@ -20,11 +20,7 @@ pub async fn main() -> String {
     }
 
     let file_name_without_ext = &args[1];
-    let file_path = format!(
-        "{}/day05/src/part2/{}.txt",
-        dir.display(),
-        file_name_without_ext
-    );
+    let file_path = format!("{}/day05/src/{}.txt", dir.display(), file_name_without_ext);
 
     let mut file = File::open(file_path).unwrap();
     let mut contents = String::new();
@@ -35,9 +31,9 @@ pub async fn main() -> String {
 
     let mut output_file = File::options()
         .append(true)
-        .open(format!("{}/day05/src/part2/out.txt", dir.display()))
+        .open(format!("{}/day05/src/out.txt", dir.display()))
         .unwrap();
-    writeln!(output_file, "{}", solution).unwrap();
+    writeln!(output_file, "\n{}", solution).unwrap();
 
     format!("Closest location: {}", solution)
 }
