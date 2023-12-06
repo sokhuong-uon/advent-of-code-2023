@@ -1,11 +1,37 @@
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
+use std::sync::Arc;
 
-fn main() {
-    let mut file = File::open("./src/bin/in.txt").unwrap();
+use tokio::sync::Mutex;
+
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 2 {
+        let mut file = File::open("./src/bin/in.txt").unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        println!("solution: {}", solution(&contents).await);
+        return;
+    }
+
+    let file_name_without_ext = &args[1];
+    let file_path = format!("./src/bin/{}.txt", file_name_without_ext);
+
+    let mut file = File::open(file_path).unwrap();
     let mut contents = String::new();
+
     file.read_to_string(&mut contents).unwrap();
-    println!("total: {}", solution(&contents));
+
+    let solution = solution(&contents).await;
+    println!("each solution: {}", solution);
+
+    let mut output_file = File::options()
+        .append(true)
+        .open("./src/bin/out.txt")
+        .unwrap();
+    writeln!(output_file, "{}", solution).unwrap();
 }
 
 fn collect_seed(line: &str) -> Vec<u64> {
@@ -24,6 +50,7 @@ fn populate_map(map: &mut Vec<MapItem>, line: &str) {
 
     map.push(MapItem::new(map_item[0], map_item[1], map_item[2]));
 }
+
 fn find_location_from_seed(maps: &Maps, seed: &u64) -> u64 {
     let mut location = *seed;
     location = find_destination(&maps.seed_to_soil, &location);
@@ -47,6 +74,7 @@ fn find_destination(map: &Vec<MapItem>, source: &u64) -> u64 {
     destination
 }
 
+#[derive(Clone)]
 struct MapItem {
     destination_start: u64,
     source_start: u64,
@@ -71,6 +99,7 @@ impl MapItem {
     }
 }
 
+#[derive(Clone)]
 struct Maps {
     seed_to_soil: Vec<MapItem>,
     soil_to_fertilizer: Vec<MapItem>,
@@ -81,7 +110,66 @@ struct Maps {
     humidity_to_location: Vec<MapItem>,
 }
 
-fn solution(input: &str) -> u64 {
+async fn find_closest_location_from_seeds_range(
+    map: Arc<Mutex<Maps>>,
+    start_range: u64,
+    length: u64,
+) -> u64 {
+    let mut closest_location = u64::MAX;
+
+    let map_lock = map.lock().await;
+    let current_map = &*map_lock;
+
+    for seed in start_range..(start_range + length) {
+        let location = find_location_from_seed(current_map, &seed);
+        if location < closest_location {
+            closest_location = location;
+        }
+    }
+
+    closest_location
+}
+
+fn divide_range_into_sub_ranges(
+    start_range: u64,
+    range_length: u64,
+    sub_range_length: u64,
+) -> Vec<(u64, u64)> {
+    let mut sub_ranges = vec![];
+
+    let mut sub_range_start = start_range;
+    let mut length = range_length;
+
+    while length > 0 {
+        if length < sub_range_length {
+            sub_ranges.push((sub_range_start, length));
+            break;
+        }
+
+        sub_ranges.push((sub_range_start, sub_range_length));
+        sub_range_start += sub_range_length;
+        length -= sub_range_length;
+    }
+
+    sub_ranges
+}
+
+fn divide_seed_ranges_into_sub_seed_ranges(
+    seeds: Vec<u64>,
+    sub_range_length: u64,
+) -> Vec<(u64, u64)> {
+    let mut sub_ranges = vec![];
+    for i in (0..seeds.len()).step_by(2) {
+        divide_range_into_sub_ranges(seeds[i], seeds[i + 1], sub_range_length)
+            .iter()
+            .for_each(|sub_range| {
+                sub_ranges.push(*sub_range);
+            })
+    }
+    sub_ranges
+}
+
+async fn solution(input: &str) -> u64 {
     let mut seeds: Vec<u64> = vec![];
 
     let mut maps = Maps {
@@ -128,14 +216,44 @@ fn solution(input: &str) -> u64 {
         should_populate_map_on_next_iteration = true;
     }
 
-    let might = seeds
-        .iter()
-        .map(|seed| find_location_from_seed(&maps, seed))
-        .fold(u64::MAX, |acc, v| if v < acc { v } else { acc });
+    let current_map = Arc::new(Mutex::new(Maps {
+        seed_to_soil: maps.seed_to_soil.clone(),
+        soil_to_fertilizer: maps.soil_to_fertilizer.clone(),
+        fertilizer_to_water: maps.fertilizer_to_water.clone(),
+        water_to_light: maps.water_to_light.clone(),
+        light_to_temperature: maps.light_to_temperature.clone(),
+        temperature_to_humidity: maps.temperature_to_humidity.clone(),
+        humidity_to_location: maps.humidity_to_location.clone(),
+    }));
 
-    println!("might: {:?}", might);
+    println!("{:?}", seeds);
 
-    might
+    let sub_ranges = divide_seed_ranges_into_sub_seed_ranges(seeds, 100_000);
+    println!("divided into sub ranges");
+
+    let mut tasks = vec![];
+    for (sub_range_start, sub_range_length) in sub_ranges.iter() {
+        let current_map_clone = Arc::clone(&current_map);
+        tasks.push(tokio::spawn(find_closest_location_from_seeds_range(
+            current_map_clone,
+            *sub_range_start,
+            *sub_range_length,
+        )));
+    }
+
+    // wait for all tasks to finish
+    let mut closest_locations = vec![];
+    for task in tasks {
+        let result = task.await.unwrap();
+        closest_locations.push(result);
+        println!(
+            "progress: {}%",
+            closest_locations.len() * 100 / sub_ranges.len()
+        );
+    }
+    println!("closest_locations: {:?}", closest_locations);
+
+    *closest_locations.iter().min().unwrap()
 }
 
 #[cfg(test)]
@@ -230,5 +348,100 @@ mod tests {
 
         let location = super::find_location_from_seed(&maps, &seed);
         assert_eq!(location, 102);
+    }
+
+    #[test]
+    fn it_can_divide_range_into_sub_ranges() {
+        let start_range = 5;
+        let range_length = 4;
+        let sub_range_length = 1;
+
+        let sub_ranges =
+            super::divide_range_into_sub_ranges(start_range, range_length, sub_range_length);
+        assert_eq!(sub_ranges, vec![(5, 1), (6, 1), (7, 1), (8, 1),]);
+
+        let start_range = 3;
+        let range_length = 9;
+        let sub_range_length = 2;
+
+        let sub_ranges =
+            super::divide_range_into_sub_ranges(start_range, range_length, sub_range_length);
+        assert_eq!(sub_ranges, vec![(3, 2), (5, 2), (7, 2), (9, 2), (11, 1)]);
+
+        let start_range = 15;
+        let range_length = 3;
+        let sub_range_length = 4;
+
+        let sub_ranges =
+            super::divide_range_into_sub_ranges(start_range, range_length, sub_range_length);
+        assert_eq!(sub_ranges, vec![(15, 3)]);
+
+        let start_range = 500;
+        let range_length = 4;
+        let sub_range_length = 4;
+
+        let sub_ranges =
+            super::divide_range_into_sub_ranges(start_range, range_length, sub_range_length);
+        assert_eq!(sub_ranges, vec![(500, 4)]);
+    }
+
+    #[test]
+    fn it_can_divide_seed_ranges_into_sub_seed_ranges() {
+        let seeds = vec![79, 14, 55, 13];
+        let sub_range_length = 1;
+        let sub_ranges = super::divide_seed_ranges_into_sub_seed_ranges(seeds, sub_range_length);
+
+        assert_eq!(
+            sub_ranges,
+            vec![
+                (79, 1),
+                (80, 1),
+                (81, 1),
+                (82, 1),
+                (83, 1),
+                (84, 1),
+                (85, 1),
+                (86, 1),
+                (87, 1),
+                (88, 1),
+                (89, 1),
+                (90, 1),
+                (91, 1),
+                (92, 1),
+                //
+                (55, 1),
+                (56, 1),
+                (57, 1),
+                (58, 1),
+                (59, 1),
+                (60, 1),
+                (61, 1),
+                (62, 1),
+                (63, 1),
+                (64, 1),
+                (65, 1),
+                (66, 1),
+                (67, 1),
+            ]
+        );
+
+        let seeds = vec![79, 14, 55, 13];
+        let sub_range_length = 4;
+        let sub_ranges = super::divide_seed_ranges_into_sub_seed_ranges(seeds, sub_range_length);
+
+        assert_eq!(
+            sub_ranges,
+            vec![
+                (79, 4),
+                (83, 4),
+                (87, 4),
+                (91, 2),
+                //
+                (55, 4),
+                (59, 4),
+                (63, 4),
+                (67, 1),
+            ]
+        )
     }
 }
