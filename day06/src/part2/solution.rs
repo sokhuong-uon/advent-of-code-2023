@@ -12,12 +12,12 @@ pub fn main() -> String {
     format!("Total number of ways to win: {}", solution(&contents))
 }
 
-fn extract_values_from_line(line: &str) -> Vec<u64> {
+fn extract_values_from_line(line: &str) -> u64 {
     line.split(":").collect::<Vec<&str>>()[1]
         .trim()
-        .split(" ")
-        .filter_map(|numeric_string| numeric_string.parse::<u64>().ok())
-        .collect::<Vec<u64>>()
+        .replace(" ", "")
+        .parse::<u64>()
+        .unwrap()
 }
 
 fn find_number_of_way_to_win_a_game(time_available: &u64, distance: &u64) -> u64 {
@@ -34,14 +34,10 @@ fn find_number_of_way_to_win_a_game(time_available: &u64, distance: &u64) -> u64
 }
 
 fn solution(input: &str) -> u64 {
-    let times = extract_values_from_line(input.lines().nth(0).unwrap());
-    let distances = extract_values_from_line(input.lines().nth(1).unwrap());
+    let time = extract_values_from_line(input.lines().nth(0).unwrap());
+    let distance = extract_values_from_line(input.lines().nth(1).unwrap());
 
-    times
-        .iter()
-        .enumerate()
-        .map(|(i, time)| find_number_of_way_to_win_a_game(time, &distances[i]))
-        .fold(1, |acc, current| acc * current)
+    find_number_of_way_to_win_a_game(&time, &distance)
 }
 
 #[cfg(test)]
@@ -52,11 +48,11 @@ mod tests {
     fn it_can_extract_values_from_line() {
         let time = "Time:      7  15   30";
         let times = extract_values_from_line(time);
-        assert_eq!(times, vec![7, 15, 30]);
+        assert_eq!(times, 71530);
 
         let distance = "Distance:  9  40  200";
         let distances = extract_values_from_line(distance);
-        assert_eq!(distances, vec![9, 40, 200]);
+        assert_eq!(distances, 940200);
     }
 
     #[test]
