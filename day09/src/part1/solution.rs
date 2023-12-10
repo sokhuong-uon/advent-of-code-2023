@@ -21,27 +21,38 @@ fn extract_sequence(line: &str) -> Vec<i64> {
 fn find_next_value(
     sequence: &Vec<i64>,
     current_index: &mut usize,
-    first_values: &mut Vec<i64>,
+    current_values: &mut Vec<i64>,
     last_values: &mut Vec<i64>,
+    length_of_previous_values: usize,
 ) {
-    let cloned_first_values = first_values.clone();
+    let cloned_first_values = current_values.clone();
 
     let mut n = sequence[*current_index];
-    first_values.push(n);
+    current_values.push(n);
     for v in cloned_first_values {
         let diff = v - n;
         n = diff;
-        first_values.push(diff);
+        current_values.push(diff);
 
-        first_values.remove(0);
+        current_values.remove(0);
     }
     last_values.push(n);
 
-    if first_values[first_values.len() - 1] == 0 {
+    if current_values[current_values.len() - 1] == 0
+        && length_of_previous_values == current_values.len()
+    {
         return;
     } else {
-        *current_index -= 1;
-        return find_next_value(sequence, current_index, first_values, last_values);
+        let mut index = *current_index - 1;
+        if index > 0 {
+            return find_next_value(
+                sequence,
+                &mut index,
+                current_values,
+                last_values,
+                current_values.len(),
+            );
+        }
     }
 }
 
@@ -52,20 +63,17 @@ fn solution(input: &str) -> i64 {
 
         let mut current_index = sequence.len() - 1;
         let mut last_values = vec![sequence[current_index]];
-        let mut first_values = vec![sequence[current_index]];
+        let mut current_values = vec![sequence[current_index]];
+        let length_of_previous_values = current_values.len();
 
         current_index -= 1;
         find_next_value(
             &sequence,
             &mut current_index,
-            &mut first_values,
+            &mut current_values,
             &mut last_values,
+            length_of_previous_values,
         );
-
-        let mut index = current_index - 1;
-        if index > 0 {
-            find_next_value(&sequence, &mut index, &mut first_values, &mut last_values);
-        }
 
         total += last_values.iter().sum::<i64>();
     }
