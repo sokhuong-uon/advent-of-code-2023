@@ -30,6 +30,7 @@ dependencies = [
  "day07",
  "day08",
  "day09",
+ "learning",
 ]
 
 [[package]]
@@ -184,6 +185,10 @@ checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
 dependencies = [
  "either",
 ]
+
+[[package]]
+name = "learning"
+version = "0.1.0"
 
 [[package]]
 name = "libc"
