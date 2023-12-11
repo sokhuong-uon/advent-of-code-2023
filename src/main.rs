@@ -6,8 +6,8 @@
 // use day08::part2;
 // use day09::part2;
 // use learning::binary_search;
-use day10::part1;
+use day10::part2;
 
 fn main() {
-    println!("{}", part1::solution::main());
+    println!("{}", part2::solution::main());
 }

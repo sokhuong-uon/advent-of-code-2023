@@ -15,7 +15,7 @@ pub fn main() -> String {
     format!("Total: {}", solution(&contents))
 }
 
-fn get_vec_of_char_from_line(line: &str) -> (Vec<char>, Option<usize>) {
+pub fn get_vec_of_char_from_line(line: &str) -> (Vec<char>, Option<usize>) {
     let mut column: Option<usize> = None;
     let mut vec = Vec::new();
     for (i, char) in line.chars().enumerate() {
@@ -27,7 +27,7 @@ fn get_vec_of_char_from_line(line: &str) -> (Vec<char>, Option<usize>) {
     (vec, column)
 }
 
-fn get_north_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
+pub fn get_north_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
     if is_walkable(matrix, current_position, Direction::North) {
         Some((current_position.0 - 1, current_position.1))
     } else {
@@ -35,7 +35,7 @@ fn get_north_cordinate(matrix: &Matrix, current_position: Position) -> Option<Po
     }
 }
 
-fn get_south_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
+pub fn get_south_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
     if is_walkable(matrix, current_position, Direction::South) {
         Some((current_position.0 + 1, current_position.1))
     } else {
@@ -43,7 +43,7 @@ fn get_south_cordinate(matrix: &Matrix, current_position: Position) -> Option<Po
     }
 }
 
-fn get_east_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
+pub fn get_east_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
     if is_walkable(matrix, current_position, Direction::East) {
         Some((current_position.0, current_position.1 + 1))
     } else {
@@ -51,7 +51,7 @@ fn get_east_cordinate(matrix: &Matrix, current_position: Position) -> Option<Pos
     }
 }
 
-fn get_west_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
+pub fn get_west_cordinate(matrix: &Matrix, current_position: Position) -> Option<Position> {
     if is_walkable(matrix, current_position, Direction::West) {
         Some((current_position.0, current_position.1 - 1))
     } else {
@@ -59,7 +59,7 @@ fn get_west_cordinate(matrix: &Matrix, current_position: Position) -> Option<Pos
     }
 }
 
-fn populate_matrix(matrix: &mut Matrix, input: &str) -> Position {
+pub fn populate_matrix(matrix: &mut Matrix, input: &str) -> Position {
     let mut start_position = (0, 0);
     for (i, line) in input.lines().enumerate() {
         let (vec, column) = get_vec_of_char_from_line(line);
@@ -71,7 +71,7 @@ fn populate_matrix(matrix: &mut Matrix, input: &str) -> Position {
     start_position
 }
 
-fn find_cordinate_of_pipes_connected_to_start_position(
+pub fn find_cordinate_of_pipes_connected_to_start_position(
     matrix: &mut Matrix,
     start_position: Position,
 ) -> (Position, Position) {
@@ -102,7 +102,7 @@ fn find_cordinate_of_pipes_connected_to_start_position(
     (connected_cordinate[0][0], connected_cordinate[0][1])
 }
 
-fn get_next_position(
+pub fn get_next_position(
     matrix: &Matrix,
     current_position: Position,
     previous_position: Position,
