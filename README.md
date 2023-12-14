@@ -14,6 +14,12 @@ cargo test --workspace
 cargo test -p day06
 ```
 
+or
+
+```bash
+cargo test -p day14
+```
+
 ###
 
 ## Run solution
