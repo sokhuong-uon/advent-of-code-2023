@@ -26,7 +26,7 @@ cargo test -p day14
 
 Change the code inside `main.or` to each solution.
 
-### Run day 13 part 1
+### Run day 13 part 2
 
 ```rust
 use day13::part2;
