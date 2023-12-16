@@ -157,9 +157,11 @@ fn move_north_initial(
                     } else {
                         let mut new_round_rocks = round_rocks[x].clone();
                         let mut increment = 0;
+                        let original_length = round_rocks[x].len();
 
                         let mut previous_rock_option: Option<&mut Rock> = None;
                         for (index, rock) in round_rocks[x].iter_mut().enumerate() {
+                            println!("{:?}", rock);
                             if y < rock.1 {
                                 if let Some(previous_rock) = previous_rock_option {
                                     if previous_rock.0 == 'O' {
@@ -180,7 +182,23 @@ fn move_north_initial(
                                     increment += 1;
                                 }
                             } else {
-                                todo!()
+                                println!("wow;{} {}", index, original_length - 1);
+                                if index == original_length - 1 {
+                                    println!("aha");
+                                    println!("{}", previous_rock_option.is_some());
+                                    if let Some(previous_rock) = previous_rock_option {
+                                        println!("{} {}", previous_rock.0, previous_rock.2);
+                                        if previous_rock.0 == 'O' {
+                                            previous_rock.2 += 1;
+                                        } else {
+                                            new_round_rocks.push((
+                                                'O',
+                                                previous_rock.2,
+                                                previous_rock.2 + 1,
+                                            ));
+                                        }
+                                    }
+                                }
                             }
 
                             previous_rock_option = Some(rock);
