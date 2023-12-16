@@ -24,59 +24,59 @@ fn extract_chars_and_order(line: &str) -> (Vec<char>, Vec<u32>) {
     )
 }
 
-fn is_able_to_accommodate(chars: &[char], amount: &u32) -> Option<usize> {
-    let mut optional_pending = 0;
-    let mut available_pending = 0;
+// fn is_able_to_accommodate(chars: &[char], amount: &u32) -> Option<usize> {
+//     let mut optional_pending = 0;
+//     let mut available_pending = 0;
 
-    let mut able_to_accommodate = false;
+//     let mut able_to_accommodate = false;
 
-    let last_index = chars.len() - 1;
+//     let last_index = chars.len() - 1;
 
-    // "??# 2";
+//     // "??# 2";
 
-    for (index, char) in chars.iter().enumerate() {
-        match char {
-            '.' => {
-                if optional_pending == *amount || available_pending == *amount {
-                    able_to_accommodate = true;
-                }
+//     for (index, char) in chars.iter().enumerate() {
+//         match char {
+//             '.' => {
+//                 if optional_pending == *amount || available_pending == *amount {
+//                     able_to_accommodate = true;
+//                 }
 
-                optional_pending = 0;
-                available_pending = 0;
-            }
-            '?' => {
-                if optional_pending == *amount || available_pending == *amount {
-                    able_to_accommodate = true;
-                }
+//                 optional_pending = 0;
+//                 available_pending = 0;
+//             }
+//             '?' => {
+//                 if optional_pending == *amount || available_pending == *amount {
+//                     able_to_accommodate = true;
+//                 }
 
-                optional_pending += 1;
-                available_pending += 1;
+//                 optional_pending += 1;
+//                 available_pending += 1;
 
-                if index == last_index {
-                    if optional_pending == *amount {
-                        able_to_accommodate = true;
-                    }
-                }
-            }
-            '#' => {
-                available_pending += 1;
-                optional_pending = 0;
+//                 if index == last_index {
+//                     if optional_pending == *amount {
+//                         able_to_accommodate = true;
+//                     }
+//                 }
+//             }
+//             '#' => {
+//                 available_pending += 1;
+//                 optional_pending = 0;
 
-                if index == last_index {
-                    if available_pending == *amount {
-                        able_to_accommodate = true;
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
+//                 if index == last_index {
+//                     if available_pending == *amount {
+//                         able_to_accommodate = true;
+//                     }
+//                 }
+//             }
+//             _ => {}
+//         }
+//     }
 
-    None
-}
+//     None
+// }
 
-fn solution(input: &str) -> usize {
-    let mut total = 0;
+fn solution(_input: &str) -> usize {
+    let total = 0;
 
     let line = "???.### 1,1,3";
     println!("{:?}", extract_chars_and_order(line));
