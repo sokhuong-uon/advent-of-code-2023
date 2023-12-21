@@ -1,5 +1,5 @@
-use day17::part2;
+use day18::part1;
 
 fn main() {
-    println!("{}", part2::solution::main());
+    println!("{}", part1::solution::main());
 }
