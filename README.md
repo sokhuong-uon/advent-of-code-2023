@@ -66,8 +66,8 @@ fn main() {
 | 14  | &check; |         |
 | 15  | &check; | &check; |
 | 16  | &check; | &check; |
-| 17  |         |         |
-| 18  |         |         |
+| 17  | &check; | &check; |
+| 18  | &check; | &check; |
 | 19  |         |         |
 | 20  |         |         |
 | 21  |         |         |
