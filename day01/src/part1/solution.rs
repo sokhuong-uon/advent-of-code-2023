@@ -1,10 +1,7 @@
-use std::fs;
+use utils::get_file_content;
 
 pub fn main() -> String {
-    let dir = std::env::current_dir().unwrap();
-
-    let contents = fs::read_to_string(format!("{}/day01/src/in.txt", dir.display())).unwrap();
-    format!("{}", solution(&contents))
+    format!("{}", solution(&get_file_content("/day01/src/in.txt")))
 }
 
 fn solution(input: &str) -> u32 {
