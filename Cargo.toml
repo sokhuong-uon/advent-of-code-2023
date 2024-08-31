@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 learning = { path = "./learning" }
+clap = { version = "4.5.16", features = ["derive"] }
 day01 = { path = "./day01" }
 day02 ={ path = "./day02" }
 day03 ={ path = "./day03" }

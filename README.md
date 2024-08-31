@@ -24,26 +24,13 @@ cargo test -p day14
 
 ## Run solution
 
-Change the code inside `main.rs` to each solution.
-
-### Run day 13 part 2
-
-```rust
-use day13::part2;
-
-fn main() {
-    println!("{}", part2::solution::main());
-}
+```bash
+cargo run -- -d 1 -p 1 #Run solution for day 1 part 1
 ```
+or 
 
-### Run day 14 part 1
-
-```rust
-use day14::part1;
-
-fn main() {
-    println!("{}", part1::solution::main());
-}
+```bash
+cargo run -- --day 13 --part 2 #Run solution for day 13 part 2
 ```
 
 # Problems solved
