@@ -1,69 +1,63 @@
-use std::fs::File;
-use std::io::Read;
+use std::fs;
 
 pub fn main() -> String {
     let dir = std::env::current_dir().unwrap();
 
-    let mut file = File::open(format!("{}/day01/src/in.txt", dir.display())).unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-
+    let contents = fs::read_to_string(format!("{}/day01/src/in.txt", dir.display())).unwrap();
     format!("{}", solution(&contents))
 }
 
-fn map_number(str: &str) -> &str {
-    match str {
-        "one" => "1",
-        "two" => "2",
-        "three" => "3",
-        "four" => "4",
-        "five" => "5",
-        "six" => "6",
-        "seven" => "7",
-        "eight" => "8",
-        "nine" => "9",
-        _ => str,
-    }
+fn solution(input: &str) -> u32 {
+    input
+        .lines()
+        .map(|line| {
+            let (first_digit, last_digit) = fine_first_and_last_digit(line);
+            first_digit * 10 + last_digit
+        })
+        .sum()
 }
 
-fn solution(input: &str) -> i64 {
-    let mut sum = 0;
-
-    let matches = [
-        "1", "2", "3", "4", "5", "6", "7", "8", "9", "one", "two", "three", "four", "five", "six",
-        "seven", "eight", "nine",
+fn fine_first_and_last_digit(line: &str) -> (u32, u32) {
+    let dictionary = [
+        ("1", 1),
+        ("2", 2),
+        ("3", 3),
+        ("4", 4),
+        ("5", 5),
+        ("6", 6),
+        ("7", 7),
+        ("8", 8),
+        ("9", 9),
+        ("one", 1),
+        ("two", 2),
+        ("three", 3),
+        ("four", 4),
+        ("five", 5),
+        ("six", 6),
+        ("seven", 7),
+        ("eight", 8),
+        ("nine", 9),
     ];
 
-    for line in input.lines() {
-        let mut digit_pair = ("", "");
+    let mut first_digit = 0;
+    let mut last_digit = 0;
+    let mut position_of_first_digit = usize::MAX;
+    let mut position_of_last_digit = 0;
 
-        let mut left_most_index = line.len();
-        let mut right_most_index: isize = -1;
-
-        for (index, number) in matches.iter().enumerate() {
-            let left_option = line.find(number);
-            if left_option.is_some() {
-                let i = left_option.unwrap();
-                if i < left_most_index {
-                    left_most_index = i;
-                    digit_pair.0 = matches[index];
-                }
-            }
-
-            let right_option = line.rfind(number);
-            if right_option.is_some() {
-                let i = right_option.unwrap();
-                if i as isize > right_most_index {
-                    right_most_index = i as isize;
-                    digit_pair.1 = matches[index];
-                }
+    for &(digit_pattern, value) in &dictionary {
+        if let Some(position) = line.find(digit_pattern) {
+            if position < position_of_first_digit {
+                position_of_first_digit = position;
+                first_digit = value;
             }
         }
-
-        let numeric = format!("{}{}", map_number(digit_pair.0), map_number(digit_pair.1));
-
-        sum += numeric.parse::<i64>().unwrap();
+        if let Some(position) = line.rfind(digit_pattern) {
+            if position >= position_of_last_digit {
+                position_of_last_digit = position;
+                last_digit = value;
+            }
+        }
     }
 
-    sum
+    (first_digit, last_digit)
 }
