@@ -24,7 +24,7 @@ cargo test -p day14
 
 ## Run solution
 
-Change the code inside `main.or` to each solution.
+Change the code inside `main.rs` to each solution.
 
 ### Run day 13 part 2
 
